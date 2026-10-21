@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     cookie_samesite: str = "lax"           # use "none" (+secure) if frontend/API are on different sites
     login_max_failures: int = 5
     login_window_seconds: int = 900
+    email_provider: str = "dev_outbox"     # dev_outbox | resend
+    resend_api_key: str | None = None
+    email_from: str = "Manpower Portal <no-reply@example.com>"
+    frontend_base_url: str = "http://localhost:5173"
+    invitation_ttl_hours: int = 24
 
     @field_validator("app_env")
     @classmethod
@@ -35,6 +40,8 @@ class Settings(BaseSettings):
             len(self.secret_key) < 32 or self.secret_key.startswith("change-me")
         ):
             raise ValueError("A strong SECRET_KEY is required in production")
+        if self.app_env == "production" and (self.email_provider != "resend" or not self.resend_api_key):
+            raise ValueError("Production requires EMAIL_PROVIDER=resend and RESEND_API_KEY")
         return self
 
     @property

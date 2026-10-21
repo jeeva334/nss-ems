@@ -62,3 +62,43 @@ def make_user(db):
         db.commit()
         return u
     return _make
+
+
+class FakeSender:
+    provider = "fake"
+
+    def __init__(self):
+        self.sent, self.fail_with = [], None
+
+    def send(self, to, subject, body_html):
+        from app.services.email_service import EmailDeliveryError
+        if self.fail_with:
+            raise EmailDeliveryError(self.fail_with)
+        self.sent.append((to, body_html))
+
+    def last_token(self):
+        import re
+        return re.search(r"#token=([\w\-]+)", self.sent[-1][1]).group(1)
+
+
+@pytest.fixture
+def sender(monkeypatch):
+    fake = FakeSender()
+    monkeypatch.setattr("app.services.email_service.get_email_sender", lambda: fake)
+    return fake
+
+
+@pytest.fixture
+def admin_client(client, make_user):
+    """Logged-in Admin TestClient that sends the CSRF header automatically."""
+    admin = make_user("ADMIN")
+    r = client.post("/api/v1/auth/login", json={"identifier": admin.email, "password": PASSWORD})
+    client.headers["X-CSRF-Token"] = r.json()["csrf_token"]
+    client.admin = admin
+    return client
+
+
+def new_user_payload(**over):
+    p = {"full_name": "Asha Rao", "mobile_number": "+91 98765-43210", "email": "Asha@Example.com", "role": "SUPERVISOR"}
+    p.update(over)
+    return p

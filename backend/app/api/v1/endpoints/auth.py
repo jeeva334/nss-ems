@@ -6,8 +6,9 @@ from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.security import hash_token
 from app.db.session import get_db
+from app.schemas.user import ActivateRequest
 from app.schemas.auth import LoginRequest, SessionOut, UserOut
-from app.services import audit_service, auth_service
+from app.services import audit_service, auth_service, invitation_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -44,3 +45,9 @@ def logout(response: Response, ctx: AuthContext = Depends(get_auth), db: Session
 @router.get("/me", response_model=SessionOut)
 def me(ctx: AuthContext = Depends(get_auth)):
     return SessionOut(user=UserOut.model_validate(ctx.user), csrf_token=ctx.session.csrf_token)
+
+
+@router.post("/activate")
+def activate(body: ActivateRequest, request: Request, db: Session = Depends(get_db)):
+    invitation_service.activate(db, body.token, body.password, request.client.host if request.client else "?")
+    return {"status": "activated"}

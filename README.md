@@ -1,7 +1,22 @@
 # Manpower Outsourcing Employee Management Portal
 
-Status: **Stage 2 complete** (schema + migration, authentication, RBAC primitives, bootstrap).
-Not yet implemented: user/client CRUD endpoints, invitations & activation, assignment endpoints/UI, email, deployment docs.
+Status: **Stage 3 complete** (users, invitations, activation) on top of Stage 2 (schema, auth, RBAC).
+Not yet implemented: client management, assignment endpoints/UI, deployment docs, e2e browser tests.
+
+## Users & invitations (Stage 3)
+Admin-only endpoints: `GET/POST /users`, `GET/PATCH /users/{id}`, `PATCH /users/{id}/status`,
+`POST /users/{id}/invitations`, `POST /users/{id}/invitations/revoke`; public `POST /auth/activate`.
+- Account + hashed invitation are committed **before** any email is attempted (equivalent to an outbox for this
+  scale). A provider failure keeps the account PENDING, stores a sanitized error code, and the Admin can resend.
+  The UI reports success only when the provider accepted the request.
+- Links use a URL *fragment* (`/activate#token=...`) so the token never reaches server logs or Referer headers.
+- One live invitation per user (DB partial unique index); resend revokes older tokens; redemption locks the row
+  (`SELECT … FOR UPDATE`) so concurrent redemption has exactly one winner. Resends limited to 5/hour/user.
+- Email: `EMAIL_PROVIDER=resend` + `RESEND_API_KEY` in production (enforced at startup). In development,
+  `dev_outbox` writes messages to `backend/.dev_outbox/` (gitignored, refuses to run in production).
+- Role and Employee ID cannot be changed via PATCH (422). Admins cannot deactivate themselves or the last active
+  Admin; a Manager with clients/supervisors cannot be deactivated until reassigned. Deactivation revokes sessions
+  and invitations. Reactivating a never-activated account returns it to PENDING.
 
 ## Auth architecture (decision)
 Server-side sessions in PostgreSQL. Cookie `mp_session` (HttpOnly, Secure in production, SameSite configurable)
@@ -22,6 +37,8 @@ Not yet DB-enforced: manager/client *active* status (service-layer check in Stag
 ## Known limitations
 - Login rate limiter is per-process memory; use a shared store if running multiple workers.
 - Behind Render's proxy, run uvicorn with `--proxy-headers` so client IPs are correct.
+- Resend delivery path is implemented but was NOT exercised against the real Resend API (no key in this environment); only the failure/success handling is tested via a fake sender.
+- Deactivating a Supervisor leaves its assignment row in place (resolved in Stage 4).
 - Cross-site frontend/API hosting needs COOKIE_SAMESITE=none + HTTPS.
 
 ## Local setup
