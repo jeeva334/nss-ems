@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     db_pool_size: int = 5
     db_max_overflow: int = 5
     log_level: str = "INFO"
+    session_absolute_hours: int = 12
+    session_idle_minutes: int = 60
+    cookie_secure: bool | None = None      # default: True in production
+    cookie_samesite: str = "lax"           # use "none" (+secure) if frontend/API are on different sites
+    login_max_failures: int = 5
+    login_window_seconds: int = 900
 
     @field_validator("app_env")
     @classmethod
@@ -30,6 +36,10 @@ class Settings(BaseSettings):
         ):
             raise ValueError("A strong SECRET_KEY is required in production")
         return self
+
+    @property
+    def secure_cookies(self) -> bool:
+        return self.cookie_secure if self.cookie_secure is not None else self.app_env == "production"
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -1,15 +1,18 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, Building2, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Menu, X, LogOut } from "lucide-react";
+import { useAuth } from "../hooks/AuthContext";
 import { useState } from "react";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/users", label: "User Management", icon: Users },
-  { to: "/clients", label: "Client Management", icon: Building2 },
+  { to: "/users", label: "User Management", icon: Users, roles: ["ADMIN"] },
+  { to: "/clients", label: "Client Management", icon: Building2, roles: ["ADMIN"] },
 ];
 
 export default function AppLayout() {
   const [open, setOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const items = NAV.filter((i) => !i.roles || i.roles.includes(user.role));
   return (
     <div className="min-h-screen md:flex">
       <aside
@@ -18,7 +21,7 @@ export default function AppLayout() {
       >
         <div className="px-5 py-5 text-lg font-semibold text-white">Manpower Portal</div>
         <nav className="px-3 space-y-1">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {items.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -34,6 +37,13 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="mt-8 border-t border-white/10 px-5 py-4 text-sm">
+          <p className="font-medium text-white">{user.full_name}</p>
+          <p className="text-slate-400">{user.employee_id} · {user.role}</p>
+          <button onClick={logout} className="mt-3 flex items-center gap-2 text-slate-300 hover:text-white">
+            <LogOut size={16} aria-hidden /> Sign out
+          </button>
+        </div>
       </aside>
       <div className="flex-1 min-w-0">
         <header className="md:hidden flex items-center justify-between bg-navy-900 text-white px-4 py-3">
