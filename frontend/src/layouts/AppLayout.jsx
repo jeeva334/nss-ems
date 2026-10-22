@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, Building2, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Menu, X, LogOut, ScrollText } from "lucide-react";
 import { useAuth } from "../hooks/AuthContext";
 import { useState } from "react";
 
@@ -7,6 +7,7 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/users", label: "User Management", icon: Users, roles: ["ADMIN"] },
   { to: "/clients", label: "Client Management", icon: Building2, roles: ["ADMIN"] },
+  { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["ADMIN"] },
 ];
 
 export default function AppLayout() {

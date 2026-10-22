@@ -17,5 +17,5 @@ def test_ready_hits_real_postgres():
 
 
 def test_correlation_id_echoed():
-    r = client.get("/api/v1/health/live", headers={"X-Request-ID": "abc123"})
-    assert r.headers["X-Request-ID"] == "abc123"
+    r = client.get("/api/v1/health/live", headers={"X-Request-ID": "abc12345"})
+    assert r.headers["X-Request-ID"] == "abc12345"

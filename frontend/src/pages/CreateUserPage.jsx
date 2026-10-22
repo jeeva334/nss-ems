@@ -7,6 +7,8 @@ import { createUserSchema } from "../schemas/userSchemas";
 import { createUser } from "../services/userService";
 
 const input = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2";
+// Declared at module level: a component defined inside render would be re-created (and remounted) on every render.
+const Err = ({ errors, name }) => (errors[name] ? <p role="alert" className="mt-1 text-sm text-red-600">{errors[name].message}</p> : null);
 
 export default function CreateUserPage() {
   const [result, setResult] = useState(null);
@@ -56,7 +58,6 @@ export default function CreateUserPage() {
     );
   }
 
-  const Err = ({ name }) => errors[name] ? <p className="mt-1 text-sm text-red-600">{errors[name].message}</p> : null;
   return (
     <section className="max-w-xl">
       <h1 className="text-2xl font-semibold">Create User</h1>
@@ -64,16 +65,16 @@ export default function CreateUserPage() {
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         {formError && <p role="alert" className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700"><AlertTriangle size={16} /> {formError}</p>}
         <label htmlFor="full_name" className="block text-sm font-medium">Full name</label>
-        <input id="full_name" className={input} {...register("full_name")} aria-invalid={!!errors.full_name} /><Err name="full_name" />
+        <input id="full_name" className={input} {...register("full_name")} aria-invalid={!!errors.full_name} /><Err errors={errors} name="full_name" />
         <label htmlFor="mobile_number" className="mt-4 block text-sm font-medium">Mobile number</label>
-        <input id="mobile_number" inputMode="tel" className={input} {...register("mobile_number")} aria-invalid={!!errors.mobile_number} /><Err name="mobile_number" />
+        <input id="mobile_number" inputMode="tel" className={input} {...register("mobile_number")} aria-invalid={!!errors.mobile_number} /><Err errors={errors} name="mobile_number" />
         <label htmlFor="email" className="mt-4 block text-sm font-medium">Email address</label>
-        <input id="email" type="email" className={input} {...register("email")} aria-invalid={!!errors.email} /><Err name="email" />
+        <input id="email" type="email" className={input} {...register("email")} aria-invalid={!!errors.email} /><Err errors={errors} name="email" />
         <label htmlFor="role" className="mt-4 block text-sm font-medium">Role</label>
         <select id="role" className={input} {...register("role")} aria-invalid={!!errors.role}>
           <option value="">Select a role</option><option value="ADMIN">Admin</option>
           <option value="MANAGER">Manager</option><option value="SUPERVISOR">Supervisor</option>
-        </select><Err name="role" />
+        </select><Err errors={errors} name="role" />
         <div className="mt-6 flex items-center gap-3">
           <button type="submit" disabled={isSubmitting}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">

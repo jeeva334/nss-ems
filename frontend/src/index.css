@@ -1,5 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-navy-800: #14213d;
+  --color-navy-900: #0b1530;
+}
 
 :focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }

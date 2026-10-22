@@ -7,6 +7,7 @@ import UserListPage from "./pages/UserListPage";
 import CreateUserPage from "./pages/CreateUserPage";
 import UserDetailPage from "./pages/UserDetailPage";
 import ActivatePage from "./pages/ActivatePage";
+import AuditLogPage from "./pages/AuditLogPage";
 import ClientListPage from "./pages/ClientListPage";
 import CreateClientPage from "./pages/CreateClientPage";
 import ClientDetailPage from "./pages/ClientDetailPage";
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="users" element={<UserListPage />} />
             <Route path="users/new" element={<CreateUserPage />} />
             <Route path="users/:id" element={<UserDetailPage />} />
+            <Route path="audit" element={<AuditLogPage />} />
             <Route path="clients" element={<ClientListPage />} />
             <Route path="clients/new" element={<CreateClientPage />} />
             <Route path="clients/:id" element={<ClientDetailPage />} />

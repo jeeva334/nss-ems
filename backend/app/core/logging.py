@@ -14,6 +14,8 @@ class JsonFormatter(logging.Formatter):
             "msg": record.getMessage(),
             "correlation_id": correlation_id_var.get(),
         }
+        if hasattr(record, "http"):
+            payload.update(record.http)
         if record.exc_info:
             payload["exc"] = self.formatException(record.exc_info)
         return json.dumps(payload)
