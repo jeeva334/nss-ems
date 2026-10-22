@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DBAPIError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.errors import AppError
@@ -66,6 +67,15 @@ async def http_error(request: Request, exc: StarletteHTTPException):
 async def validation_error(request: Request, exc: RequestValidationError):
     fields = [{"field": ".".join(str(p) for p in e["loc"][1:]), "message": e["msg"]} for e in exc.errors()]
     return _err(422, "validation_error", "Invalid input.", {"fields": fields})
+
+
+@app.exception_handler(DBAPIError)
+async def db_error(request: Request, exc: DBAPIError):
+    code = getattr(exc.orig, "sqlstate", None) or ""
+    if code.startswith("23") or code in {"40P01", "40001"}:
+        return _err(409, "conflict", "This change conflicts with the current state. Reload and try again.")
+    log.exception("database error")
+    return _err(500, "internal_error", "Internal server error")
 
 
 @app.exception_handler(Exception)

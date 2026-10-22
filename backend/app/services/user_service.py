@@ -20,7 +20,8 @@ def get_or_404(db: Session, user_id: int) -> User:
     return user
 
 
-def list_users(db: Session, q: str | None, role: str | None, status: str | None, page: int, page_size: int):
+def list_users(db: Session, q: str | None, role: str | None, status: str | None, page: int, page_size: int,
+               mapped: bool | None = None):
     stmt = select(User)
     if q and q.strip():
         pat = f"%{_escape_like(q.strip())}%"
@@ -30,6 +31,9 @@ def list_users(db: Session, q: str | None, role: str | None, status: str | None,
         stmt = stmt.where(User.role == role)
     if status:
         stmt = stmt.where(User.status == status)
+    if mapped is not None:  # Supervisors with / without a Manager mapping
+        has = select(SupervisorAssignment.id).where(SupervisorAssignment.supervisor_id == User.id).exists()
+        stmt = stmt.where(has if mapped else ~has)
     total = db.scalar(select(func.count()).select_from(stmt.subquery()))
     items = db.scalars(stmt.order_by(User.created_at.desc(), User.id.desc())
                        .offset((page - 1) * page_size).limit(page_size)).all()
@@ -76,6 +80,7 @@ def set_status(db: Session, user: User, new_status: str, actor: User) -> User:
     if user.status == new_status:
         raise AppError(409, "invalid_transition", f"User is already {new_status.lower()}.")
     if new_status == INACTIVE:
+        db.refresh(user, with_for_update=True)  # serialises against concurrent assignments to this user
         if user.id == actor.id:
             raise AppError(409, "cannot_deactivate_self", "You cannot deactivate your own account.")
         if user.role == ADMIN and not db.scalar(select(User.id).where(
@@ -87,6 +92,9 @@ def set_status(db: Session, user: User, new_status: str, actor: User) -> User:
             raise AppError(409, "has_dependent_assignments",
                            "Reassign this Manager's clients and Supervisors before deactivating.")
         user.status = INACTIVE
+        if user.role == SUPERVISOR:  # recorded in history + audit; an inactive Supervisor keeps no live mapping
+            from app.services import assignment_service
+            assignment_service.remove_mapping_no_commit(db, user, actor.id, "supervisor_unmapped_on_deactivation")
         auth_service.revoke_user_sessions(db, user.id)
         invitation_service.revoke_active(db, user.id)
     else:

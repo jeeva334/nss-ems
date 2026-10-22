@@ -20,9 +20,10 @@ admin_only = require_roles(ADMIN)
 def list_users(q: str | None = Query(None, max_length=100),
                role: Literal["ADMIN", "MANAGER", "SUPERVISOR"] | None = None,
                status: Literal["PENDING", "ACTIVE", "INACTIVE"] | None = None,
+               mapped: bool | None = None,
                page: int = Query(1, ge=1, le=100000), page_size: int = Query(20, ge=1, le=100),
                db: Session = Depends(get_db), _: User = Depends(admin_only)):
-    items, total = user_service.list_users(db, q, role, status, page, page_size)
+    items, total = user_service.list_users(db, q, role, status, page, page_size, mapped)
     return UserListOut(items=[UserOut.model_validate(u) for u in items], total=total, page=page, page_size=page_size)
 
 

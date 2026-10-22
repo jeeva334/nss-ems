@@ -10,6 +10,8 @@ import { activateSchema, createUserSchema } from "./schemas/userSchemas";
 
 vi.mock("./services/authService");
 vi.mock("./services/userService");
+vi.mock("./services/clientService");
+vi.mock("./services/assignmentService");
 
 const admin = { csrf_token: "t", user: { id: 1, full_name: "Root", employee_id: "EMP0001", role: "ADMIN" } };
 const u = (o = {}) => ({ id: 2, employee_id: "EMP0002", full_name: "Asha Rao", email: "asha@example.com", mobile_number: "+919876543210",
@@ -141,7 +143,9 @@ test("supervisor detail shows read-only manager and client", async () => {
   renderAt("/users/7");
   expect(await screen.findByText("Manager (read-only)")).toBeInTheDocument();
   expect(screen.getByText("Mia Mgr (EMP0006)")).toBeInTheDocument();
-  expect(screen.queryByRole("combobox")).toBeNull();
+  // the Manager is shown as text only; no Manager picker exists inside the client assignment control
+  expect(screen.queryByLabelText("Manager")).toBeNull();
+  expect(screen.getByLabelText("Client")).toBeInTheDocument();
 });
 
 test("deactivation requires confirmation", async () => {

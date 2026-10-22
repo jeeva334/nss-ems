@@ -25,6 +25,7 @@ export function toApiError(err) {
     code: data?.code ?? (err?.response ? "request_failed" : "network_error"),
     message: data?.message ?? (err?.response ? "Request failed." : "Cannot reach the server."),
     fields: data?.details?.fields ?? [],
+    details: data?.details ?? null,
   };
 }
 

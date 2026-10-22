@@ -1,7 +1,31 @@
 # Manpower Outsourcing Employee Management Portal
 
-Status: **Stage 3 complete** (users, invitations, activation) on top of Stage 2 (schema, auth, RBAC).
-Not yet implemented: client management, assignment endpoints/UI, deployment docs, e2e browser tests.
+Status: **Stage 4 complete** (clients & assignments) on top of Stage 3 (users/invitations) and Stage 2 (auth/RBAC).
+Not yet implemented: Stage 5 hardening + browser e2e tests, Stage 6 deployment/backup docs, audit-log viewer UI.
+
+## Clients & assignments (Stage 4)
+Endpoints: `GET/POST /clients`, `GET/PATCH /clients/{id}`, `PATCH /clients/{id}/status`, `PUT /clients/{id}/manager`,
+`PUT /users/{id}/manager` (map Supervisor to Manager), `PUT /users/{id}/client` (assign Supervisor's client),
+`GET /users/{id}/assignments` (current + history). All mutations are Admin-only.
+Resource-level reads: Admin sees all clients; a Manager lists/views only their own (403 otherwise); a Supervisor may
+view only their assigned client (colleagues are not exposed).
+
+Decisions / rules
+- A client may exist without a Manager (unassigned); it can only ever have one (single column). Client code is
+  normalised to upper case and immutable.
+- **Reassignment (option 1, "block")**: moving or removing a client's Manager needs `reassign: true` and is refused
+  (409 `has_dependent_assignments`, listing the Supervisors) while any Supervisor is assigned to that client. The Admin
+  resolves explicitly by moving/clearing those Supervisors first. Same rule for deactivating a client.
+- Supervisor Manager change is a separate explicit action; if the Supervisor has a client, `clear_client: true` is
+  required (409 `has_client_assignment` otherwise). The client endpoint never accepts a Manager: it is taken from the
+  stored mapping and the client is validated against it, even if the UI already filters the options.
+- Pending/inactive Managers and inactive clients cannot be assigned. Deactivating a Supervisor unmaps them and records
+  `supervisor_unmapped_on_deactivation` in history + audit (resolves the Stage 3 limitation).
+- Concurrency: assignment writes lock the client row (`FOR UPDATE`), the manager (`FOR SHARE`) and the assignment
+  (`FOR NO KEY UPDATE`, which avoids deadlocks with the FK checks). Any remaining DB conflict/deadlock is converted to a
+  clean 409 (`conflict`). The composite foreign keys remain the last line of defence.
+- Manager UI: assign *unassigned* clients, remove clients, map/unmap Supervisors. Moving a client that already has a
+  Manager happens only from the client page (explicit reassignment dialog).
 
 ## Users & invitations (Stage 3)
 Admin-only endpoints: `GET/POST /users`, `GET/PATCH /users/{id}`, `PATCH /users/{id}/status`,
@@ -38,7 +62,8 @@ Not yet DB-enforced: manager/client *active* status (service-layer check in Stag
 - Login rate limiter is per-process memory; use a shared store if running multiple workers.
 - Behind Render's proxy, run uvicorn with `--proxy-headers` so client IPs are correct.
 - Resend delivery path is implemented but was NOT exercised against the real Resend API (no key in this environment); only the failure/success handling is tested via a fake sender.
-- Deactivating a Supervisor leaves its assignment row in place (resolved in Stage 4).
+- Reactivating a Supervisor does not restore their old assignment; the Admin re-maps them (history shows what was removed).
+- Manager/Supervisor-facing screens for clients are not built; their backend read access exists and is tested, but the UI nav is Admin-only.
 - Cross-site frontend/API hosting needs COOKIE_SAMESITE=none + HTTPS.
 
 ## Local setup

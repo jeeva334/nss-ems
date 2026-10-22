@@ -9,11 +9,9 @@ import { useAsync } from "../hooks/useAsync";
 import { useAuth } from "../hooks/AuthContext";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmDialog from "../components/ConfirmDialog";
+import AssignmentSection from "../components/AssignmentPanels";
+import { card, Row } from "../components/ui";
 
-const card = "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
-const Row = ({ label, children }) => (
-  <div className="flex justify-between gap-4 py-2 text-sm"><dt className="text-slate-500">{label}</dt><dd className="text-right font-medium">{children}</dd></div>
-);
 
 function EditForm({ user, onSaved, onCancel }) {
   const [err, setErr] = useState(null);
@@ -42,29 +40,6 @@ function EditForm({ user, onSaved, onCancel }) {
         <button type="button" onClick={onCancel} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm">Cancel</button>
       </div>
     </form>
-  );
-}
-
-function Assignments({ user, a }) {
-  if (user.role === "ADMIN") return <div className={card}><h2 className="font-semibold">Administrative profile</h2><p className="mt-2 text-sm text-slate-600">Admins have company-wide access and no client assignments.</p></div>;
-  if (user.role === "MANAGER") return (
-    <div className={card}>
-      <h2 className="font-semibold">Assigned clients</h2>
-      {a.clients?.length ? <ul className="mt-2 divide-y text-sm">{a.clients.map((c) => <li key={c.id} className="py-2">{c.client_name} <span className="text-slate-500">({c.client_code})</span></li>)}</ul>
-        : <p className="mt-2 text-sm text-slate-600">No clients assigned yet.</p>}
-      <h2 className="mt-5 font-semibold">Supervisors under this Manager</h2>
-      {a.supervisors?.length ? <ul className="mt-2 divide-y text-sm">{a.supervisors.map((s) => <li key={s.id} className="py-2"><Link className="text-blue-700 hover:underline" to={`/users/${s.id}`}>{s.full_name}</Link> <span className="text-slate-500">{s.employee_id}</span></li>)}</ul>
-        : <p className="mt-2 text-sm text-slate-600">No Supervisors mapped yet.</p>}
-    </div>
-  );
-  return (
-    <div className={card}>
-      <h2 className="font-semibold">Manager and client</h2>
-      <dl className="mt-2 divide-y">
-        <Row label="Manager (read-only)">{a.manager ? `${a.manager.full_name} (${a.manager.employee_id})` : "Not mapped"}</Row>
-        <Row label="Client">{a.client ? `${a.client.client_name} (${a.client.client_code})` : "Not assigned"}</Row>
-      </dl>
-    </div>
   );
 }
 
@@ -134,7 +109,7 @@ export default function UserDetailPage() {
         </div>
       </div>
 
-      <div className="mt-5"><Assignments user={user} a={assignments} /></div>
+      <div className="mt-5"><AssignmentSection user={user} a={assignments} onChanged={(n) => { setNotice(n); retry(); }} /></div>
 
       {confirm === "revoke" && <ConfirmDialog title="Revoke invitation?" message="The activation link will stop working immediately." confirmLabel="Revoke" danger busy={busy} onCancel={() => setConfirm(null)}
         onConfirm={() => run(() => users.revokeInvitation(user.id), () => "Invitation revoked.")} />}
